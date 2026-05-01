@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JMF BOT | غرفة التحكم للمدير</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0f172a; --primary: #00d4ff; --secondary: #8b5cf6;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --border: rgba(0, 212, 255, 0.15);
+            --danger: #ef4444; --success: #10b981; --warning: #fbbf24;
+        }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        
+        #login-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg);
+            display: flex; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .login-box {
+            background: var(--panel); padding: 40px; border-radius: 20px; border: 1px solid var(--border);
+            text-align: center; width: 90%; max-width: 400px; box-shadow: 0 0 50px rgba(0, 212, 255, 0.1);
+        }
+        .login-box input {
+            width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #334155;
+            background: #000; color: var(--primary); font-size: 20px; text-align: center; margin-bottom: 20px; outline: none;
+        }
+
+        #dashboard { display: none; }
+        .header { background: var(--panel); padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 22px; color: var(--primary); font-weight: 800; }
+        
+        .main-content { padding: 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 15px; text-align: center; position: relative; overflow: hidden; }
+        .stat-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
+        .stat-card.active::after { background: var(--success); }
+        
+        .action-box { background: var(--panel); border: 1px solid var(--border); padding: 25px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .action-box h2 { font-size: 18px; margin-bottom: 20px; color: var(--secondary); display: flex; align-items: center; gap: 10px; }
+        
+        .input-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
+        .input-group { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 13px; color: var(--text-muted); font-weight: bold; }
+        input, select {
+            background: #000; border: 1px solid #334155; color: #fff;
+            padding: 14px; border-radius: 12px; font-size: 14px; outline: none; width: 100%;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none; color: #000; font-weight: 800; padding: 0 35px; border-radius: 12px;
+            cursor: pointer; transition: 0.3s; height: 50px; font-size: 15px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4); }
+
+        .table-box { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 1100px; }
+        th { background: rgba(0, 212, 255, 0.05); padding: 18px; color: var(--primary); font-size: 13px; border-bottom: 1px solid var(--border); }
+        td { padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        
+        .badge { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; }
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-expired { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-left: 5px; }
+        .online { background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+        .offline { background: #475569; }
+        
+        .trade-status { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+        .trading-on { color: var(--primary); }
+        .trading-off { color: #64748b; }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        .action-btns { display: flex; gap: 10px; }
+        .icon-btn { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            color: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .icon-btn:hover { background: var(--danger); }
+        .realtime-indicator { font-size: 11px; color: var(--success); display: flex; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color: var(--primary); font-weight: 800;">JMF ADMIN</h2>
+            <input type="password" id="admin-pass" placeholder="كلمة المرور">
+            <button class="btn" style="width: 100%" onclick="checkPass()">دخول آمن</button>
+            <p id="login-err" style="color: var(--danger); margin-top: 15px; display: none;">❌ كلمة المرور غير صحيحة</p>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div class="header">
+            <h1>JMF Admin Control</h1>
+            <div class="realtime-indicator"><div style="width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse 1.5s infinite"></div> مراقبة مباشرة لكل المستخدمين</div>
+            <button class="icon-btn" onclick="location.reload()" style="color:var(--danger)">خروج</button>
+        </div>
+
+        <div class="main-content">
+            <div class="stats-grid">
+                <div class="stat-card"><h3>التراخيص</h3><div id="stat-total" style="font-size:32px; font-weight:800;">0</div></div>
+                <div class="stat-card active"><h3>أونلاين الآن</h3><div id="stat-active-now" style="font-size:32px; font-weight:800; color:var(--success)">0</div></div>
+                <div class="stat-card"><h3>يتداولون حالياً</h3><div id="stat-trading-now" style="font-size:32px; font-weight:800; color:var(--primary)">0</div></div>
+            </div>
+
+            <div class="action-box">
+                <h2>➕ إنشاء سيريال جديد</h2>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>كود التفعيل</label>
+                        <input type="text" id="new-key" readonly style="letter-spacing: 2px;">
+                    </div>
+                    <div class="input-group">
+                        <label>المدة</label>
+                        <select id="duration">
+                            <option value="0.000694">دقيقة واحدة (تجربة)</option>
+                            <option value="30">شهر واحد</option><option value="90">3 أشهر</option>
+                            <option value="365">سنة كاملة</option><option value="9999">مدى الحياة</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>العميل</label><input type="text" id="client-name" placeholder="الاسم">
+                    </div>
+                    <button class="btn" onclick="generateLicense()">إنشاء وتفعيل</button>
+                </div>
+            </div>
+
+            <div class="table-box">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>العميل</th>
+                            <th>الاتصال</th>
+                            <th>السيريال</th>
+                            <th>التداول</th>
+                            <th>الانتهاء</th>
+                            <th>ID الجهاز</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="license-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FB_URL = "https://jmf-bot-default-rtdb.firebaseio.com/licenses";
+        const ADMIN_PASS = "778899";
+
+        function checkPass() {
+            if(document.getElementById('admin-pass').value === ADMIN_PASS) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                setInterval(fetchLicenses, 3000); fetchLicenses();
+            } else { document.getElementById('login-err').style.display = 'block'; }
+        }
+
+        function generateRandomKey() {
+            const p = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+            return `JMF-${p()}-${p()}-${p()}`;
+        }
+        document.getElementById('new-key').value = generateRandomKey();
+
+        async function fetchLicenses() {
+            try {
+                const response = await fetch(`${FB_URL}.json`);
+                const data = await response.json();
+                renderTable(data);
+            } catch (e) {}
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('license-table');
+            tbody.innerHTML = ""; if(!data) return;
+            let t=0, onlineCount=0, tradingCount=0; const now = Date.now();
+            
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key]; t++;
+                const isExp = item.expiry < now;
+                const isOnline = item.last_seen && (now - item.last_seen < 120000); // 2 mins threshold
+                const isTrading = item.is_trading === true;
+                
+                if(isOnline) onlineCount++;
+                if(isOnline && isTrading) tradingCount++;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 800;">${item.client || '-'}</td>
+                    <td>
+                        <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+                        ${isOnline ? '<span style="color:var(--success)">أونلاين</span>' : '<span style="color:#64748b">أوفلاين</span>'}
+                    </td>
+                    <td style="font-family:monospace; color: var(--primary); font-weight:bold">${key}</td>
+                    <td>
+                        <div class="trade-status ${isTrading && isOnline ? 'trading-on' : 'trading-off'}">
+                            ${isTrading && isOnline ? '🚀 يتداول حالياً' : '🛑 متوقف'}
+                        </div>
+                    </td>
+                    <td style="color: ${isExp ? 'var(--danger)' : 'inherit'}; font-weight:bold">
+                        ${item.expiry > 9e12 ? 'Unlimited' : new Date(item.expiry).toLocaleDateString('ar-EG')}
+                    </td>
+                    <td style="font-size:11px; color: var(--text-muted);">${item.device_id || 'انتظار...'}</td>
+                    <td class="action-btns">
+                        <button class="icon-btn" onclick="navigator.clipboard.writeText('${key}');alert('تم النسخ')">نسخ</button>
+                        <button class="icon-btn" onclick="deleteLicense('${key}')" style="color:var(--danger)">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('stat-total').innerText = t;
+            document.getElementById('stat-active-now').innerText = onlineCount;
+            document.getElementById('stat-trading-now').innerText = tradingCount;
+        }
+
+        async function generateLicense() {
+            const key = document.getElementById('new-key').value;
+            const dur = parseFloat(document.getElementById('duration').value);
+            const client = document.getElementById('client-name').value;
+            if(!client) return alert("الاسم مطلوب");
+            const payload = { client, created: Date.now(), expiry: Date.now() + Math.round(dur * 864e5), active: true, device_id: "", is_trading: false, last_seen: 0 };
+            await fetch(`${FB_URL}/${key}.json`, { method: 'PUT', body: JSON.stringify(payload) });
+            document.getElementById('new-key').value = generateRandomKey();
+            document.getElementById('client-name').value = ""; fetchLicenses();
+        }
+
+        async function deleteLicense(key) {
+            if(confirm("حذف؟")) { await fetch(`${FB_URL}/${key}.json`, { method: 'DELETE' }); fetchLicenses(); }
+        }
+    </script>
+</body>
+</html>
