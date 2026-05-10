@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest-admin.json">
     <link rel="apple-touch-icon" href="icon-admin-192.png">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg: #05070a; --panel: #0f172a; --primary: #00d4ff; --secondary: #8b5cf6;
@@ -98,6 +99,9 @@
         .icon-btn { 
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
             color: #fff; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 800; transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .icon-btn i { width: 14px; height: 14px; }
         }
         .icon-btn.copy { color: var(--primary); border-color: rgba(0, 212, 255, 0.2); }
         .icon-btn.del { color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
@@ -220,7 +224,7 @@
             <!-- TAB 2: CLIENTS (Search + Detailed Data) -->
             <div id="tab-clients" class="tab-content">
                 <div class="search-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <i data-lucide="search" style="position:absolute; right:15px; top:15px; color:var(--primary); width:18px"></i>
                     <input type="text" id="search-input" placeholder="ابحث بالاسم، السيريال، أو ID الجهاز..." oninput="filterList()">
                 </div>
 
@@ -253,7 +257,7 @@
                     <div class="input-group">
                         <label>ملف التحديث (JMF_BOT_Setup.exe)</label>
                         <div class="drop-zone" id="drop-zone" onclick="document.getElementById('up-file').click()">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <i data-lucide="upload-cloud" style="width:40px; height:40px; color:var(--primary); margin-bottom:10px;"></i>
                             <b>اسحب الملف وأفلته هنا</b>
                             <p>أو اضغط لاختيار الملف من جهازك</p>
                             <div id="file-name-display"></div>
@@ -284,7 +288,11 @@
 
                     <button class="btn" id="btn-publish" onclick="publishUpdate()">نشر التحديث الآن ⬆️</button>
                     
-                    <div id="publish-status" style="margin-top: 15px; font-size: 12px; text-align: center; display: none;"></div>
+                    <div id="publish-progress-container" style="display:none; margin-top:20px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 2px;">
+                        <div id="publish-progress-bar" style="width: 0%; height: 10px; background: var(--primary); border-radius: 10px; transition: width 0.3s ease;"></div>
+                    </div>
+                    
+                    <div id="publish-status" style="margin-top: 15px; font-size: 12px; text-align: center; display: none; white-space: pre-wrap;"></div>
                 </div>
             </div>
 
@@ -296,7 +304,7 @@
         <div class="details-container">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="margin:0; color:var(--primary);">بيانات البث المباشر <span class="live-badge">LIVE</span></h2>
-                <button onclick="document.getElementById('details-modal').style.display='none'" style="background:transparent; border:none; color:var(--danger); font-size:24px; cursor:pointer;">&times;</button>
+                <button onclick="closeDetails()" style="background:transparent; border:none; color:var(--danger); font-size:24px; cursor:pointer;">&times;</button>
             </div>
             
             <div id="live-loading" style="text-align:center; padding:40px; color:var(--text-muted);">جاري الاتصال بالسيرفر الخاص بالعميل...</div>
@@ -336,6 +344,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
             btn.classList.add('active');
+            lucide.createIcons();
         }
 
         function checkPass() {
@@ -343,6 +352,7 @@
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 setInterval(fetchLicenses, 3000); fetchLicenses();
+                lucide.createIcons();
             } else { document.getElementById('login-err').style.display = 'block'; }
         }
 
@@ -414,9 +424,15 @@
                         ${item.expiry > 9e12 ? 'Unlimited' : new Date(item.expiry).toLocaleDateString('ar-EG')}
                     </td>
                     <td data-label="إجراءات" class="action-btns">
-                        <button class="icon-btn live" onclick="viewLive('${item.device_id}')" style="background:rgba(16,185,129,0.15); color:var(--success); border-color:rgba(16,185,129,0.3);">مباشر</button>
-                        <button class="icon-btn copy" onclick="copyKey('${key}')">نسخ</button>
-                        <button class="icon-btn del" onclick="deleteLicense('${key}')">حذف</button>
+                        <button class="icon-btn live" onclick="viewLive('${item.device_id}')">
+                            <i data-lucide="play-circle"></i> مباشر
+                        </button>
+                        <button class="icon-btn copy" onclick="copyKey('${key}')">
+                            <i data-lucide="copy"></i> نسخ
+                        </button>
+                        <button class="icon-btn del" onclick="deleteLicense('${key}')">
+                            <i data-lucide="trash-2"></i> حذف
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -424,6 +440,7 @@
             document.getElementById('stat-total').innerText = Object.keys(allData).length;
             document.getElementById('stat-active-now').innerText = onlineCount;
             document.getElementById('stat-trading-now').innerText = tradingCount;
+            lucide.createIcons();
         }
 
         function copyKey(key) {
@@ -438,7 +455,6 @@
             if(!client) return alert("الاسم مطلوب");
             const payload = { client, created: Date.now(), expiry: Date.now() + Math.round(dur * 864e5), active: true, device_id: "", is_trading: false, last_seen: 0 };
             
-            // Auto copy
             navigator.clipboard.writeText(key);
             
             await fetch(`${FB_URL}/${key}.json`, { method: 'PUT', body: JSON.stringify(payload) });
@@ -454,14 +470,16 @@
             showToast("تم حذف الترخيص بنجاح 🗑️");
         }
 
-        async function publishUpdate() {
+        function publishUpdate() {
             const btn = document.getElementById('btn-publish');
             const status = document.getElementById('publish-status');
+            const progContainer = document.getElementById('publish-progress-container');
+            const progBar = document.getElementById('publish-progress-bar');
             const fileInput = document.getElementById('up-file');
             
             const version = document.getElementById('up-version').value;
-            const repo = document.getElementById('up-repo').value;
-            const token = document.getElementById('up-token').value;
+            const repo = document.getElementById('up-repo').value.trim();
+            const token = document.getElementById('up-token').value.trim();
             const notes = document.getElementById('up-notes').value;
 
             if(!version || !repo || !token || !fileInput.files[0]) {
@@ -470,43 +488,72 @@
 
             const file = fileInput.files[0];
             btn.disabled = true;
-            btn.innerText = "جاري الرفع والنشر... ⏳";
+            btn.innerText = "جاري المعالجة... ⏳";
             status.style.display = "block";
             status.style.color = "var(--warning)";
-            status.innerText = "بدأت عملية الرفع المباشر إلى GitHub... يرجى عدم إغلاق الصفحة.";
+            progContainer.style.display = "block";
+            progBar.style.width = "0%";
 
             const headers = {
                 "Authorization": `token ${token}`,
                 "Accept": "application/vnd.github.v3+json"
             };
 
-            try {
-                // 1. Create Release
-                const relRes = await fetch(`https://api.github.com/repos/${repo}/releases`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        tag_name: `v${version}`,
-                        name: `JMF BOT v${version}`,
-                        body: notes
-                    })
-                });
-                
-                if(!relRes.ok) throw new Error(await relRes.text());
-                const release = await relRes.json();
+            fetch(`https://api.github.com/repos/${repo}/releases`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    tag_name: `v${version}`,
+                    name: `JMF BOT v${version}`,
+                    body: notes || "تحديث جديد"
+                })
+            })
+            .then(res => {
+                if(!res.ok) return res.text().then(t => { throw new Error(t) });
+                return res.json();
+            })
+            .then(release => {
                 const uploadUrl = release.upload_url.split('{')[0] + "?name=JMF_BOT_Setup.exe";
+                
+                status.innerText = `المرحلة 2: يتم الآن رفع الملف (${(file.size / (1024*1024)).toFixed(2)} MB)...`;
+                
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', uploadUrl, true);
+                xhr.setRequestHeader("Authorization", `token ${token}`);
+                xhr.setRequestHeader("Accept", "application/vnd.github.v3+json");
+                xhr.setRequestHeader("Content-Type", "application/octet-stream");
 
-                // 2. Upload File
-                status.innerText = "تم إنشاء الإصدار، يتم الآن رفع الملف (قد يستغرق ذلك وقتاً حسب سرعة الإنترنت)...";
-                const upRes = await fetch(uploadUrl, {
-                    method: 'POST',
-                    headers: { ...headers, "Content-Type": "application/octet-stream" },
-                    body: file
-                });
-                if(!upRes.ok) throw new Error(await upRes.text());
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        progBar.style.width = pct + "%";
+                        status.innerText = `المرحلة 2: جاري الرفع... ${pct}% (${(e.loaded/(1024*1024)).toFixed(1)} / ${(e.total/(1024*1024)).toFixed(1)} MB)`;
+                    }
+                };
 
-                // 3. Update update.json
-                status.innerText = "تم رفع الملف، جاري تحديث بيانات التحديث (update.json)...";
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        status.innerText = "المرحلة 3: تحديث ملف المعلومات (update.json)...";
+                        updateManifest(repo, version, notes, headers, status, btn, progContainer);
+                    } else {
+                        throw new Error(xhr.responseText);
+                    }
+                };
+
+                xhr.onerror = () => { throw new Error("حدث خطأ في الشبكة أثناء الرفع") };
+                xhr.send(file);
+            })
+            .catch(err => {
+                console.error(err);
+                status.style.color = "var(--danger)";
+                status.innerText = "❌ خطأ: " + err.message;
+                btn.disabled = false;
+                btn.innerText = "نشر تحديث جديد ⬆️";
+            });
+        }
+
+        async function updateManifest(repo, version, notes, headers, status, btn, progContainer) {
+            try {
                 const manifestUrl = `https://api.github.com/repos/${repo}/contents/update.json`;
                 const getM = await fetch(manifestUrl, { headers });
                 let sha = null;
@@ -530,16 +577,14 @@
 
                 if(updateM.ok) {
                     status.style.color = "var(--success)";
-                    status.innerText = `✅ تم بنجاح! الإصدار v${version} متاح الآن للجميع.`;
+                    status.innerText = `✅ تم بنجاح! الإصدار v${version} متاح الآن.`;
                     showToast("تم النشر بنجاح! 🚀");
                 } else {
-                    throw new Error("فشل تحديث ملف update.json");
+                    throw new Error("فشل تحديث update.json");
                 }
-
             } catch (e) {
-                console.error(e);
                 status.style.color = "var(--danger)";
-                status.innerText = "❌ خطأ أثناء الرفع: " + e.message;
+                status.innerText = "❌ خطأ في المرحلة 3: " + e.message;
             } finally {
                 btn.disabled = false;
                 btn.innerText = "نشر تحديث جديد ⬆️";
@@ -558,7 +603,7 @@
                 return alert("⚠️ هذا العميل غير متصل حالياً أو لم يتم ربط جهازه.");
             }
             
-            const tunnelUrl = devicesData[deviceId].tunnel_url;
+            const tunnelUrl = devicesData[deviceId].tunnel_url || devicesData[deviceId].url;
             if(!tunnelUrl) return alert("⚠️ لم يتم العثور على رابط بث للعميل.");
 
             document.getElementById('details-modal').style.display = 'flex';
