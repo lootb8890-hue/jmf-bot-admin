@@ -127,11 +127,45 @@
         /* Mobile View Optimization */
         @media (max-width: 900px) {
             table thead { display: none; }
-            table tr { display: block; background: rgba(255,255,255,0.02); margin: 15px; border: 1px solid var(--border); border-radius: 15px; padding: 18px; }
-            table td { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border: none; }
-            table td:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.04); }
-            table td::before { content: attr(data-label); font-weight: 800; color: var(--primary); font-size: 12px; }
-            .device-id { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+            table tr { 
+                display: block; 
+                background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4)); 
+                margin: 15px 0; 
+                border: 1px solid var(--border); 
+                border-radius: 20px; 
+                padding: 20px; 
+                box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            }
+            table td { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: flex-start; 
+                padding: 12px 0; 
+                border: none; 
+                text-align: left;
+                gap: 15px;
+            }
+            table td:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.03); }
+            table td::before { 
+                content: attr(data-label); 
+                font-weight: 800; 
+                color: var(--primary); 
+                font-size: 11px; 
+                white-space: nowrap;
+                min-width: 80px;
+            }
+            .device-id { 
+                word-break: break-all; 
+                font-size: 10px; 
+                padding: 4px 8px; 
+                display: inline-block;
+                max-width: 100%;
+            }
+            .action-btns { 
+                justify-content: center; 
+                padding-top: 15px !important;
+                flex-wrap: wrap;
+            }
 
             /* Drag & Drop Style */
             .drop-zone {
@@ -184,7 +218,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('home', this)">الرئيسية</button>
             <button class="tab-btn" onclick="switchTab('clients', this)">العملاء</button>
-            <button class="tab-btn" onclick="switchTab('updates', this)">التحديثات </button>
+            <button class="tab-btn" onclick="switchTab('updates', this)">التحديثات 🚀</button>
         </div>
 
         <div class="main-content">
@@ -413,13 +447,17 @@
                         <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
                         <span style="color:${isOnline ? 'var(--success)' : '#64748b'}">${isOnline ? 'متصل' : 'أوفلاين'}</span>
                     </td>
-                    <td data-label="السيريال" style="font-family:monospace; color: var(--primary); font-weight:800; font-size:12px;">${key}</td>
+                    <td data-label="السيريال" onclick="copyText('${key}', 'تم نسخ السيريال')" style="font-family:monospace; color: var(--primary); font-weight:800; font-size:12px; cursor:pointer;">
+                        ${key}
+                    </td>
                     <td data-label="حالة التداول">
                         <div class="trading-status ${isTrading && isOnline ? 't-active' : 't-idle'}">
                             ${isTrading && isOnline ? '🚀 يتداول حالياً' : '🛑 متوقف'}
                         </div>
                     </td>
-                    <td data-label="ID الجهاز"><span class="device-id">${item.device_id || 'لم يتم الربط'}</span></td>
+                    <td data-label="ID الجهاز" onclick="copyText('${item.device_id || ''}', 'تم نسخ معرف الجهاز')">
+                        <span class="device-id" style="cursor:pointer; border-color: rgba(251, 191, 36, 0.3);">${item.device_id || 'لم يتم الربط'}</span>
+                    </td>
                     <td data-label="تاريخ الانتهاء" style="color:${isExp ? 'var(--danger)' : 'inherit'}; font-weight:800;">
                         ${item.expiry > 9e12 ? 'Unlimited' : new Date(item.expiry).toLocaleDateString('ar-EG')}
                     </td>
@@ -446,6 +484,12 @@
         function copyKey(key) {
             navigator.clipboard.writeText(key);
             showToast("تم نسخ السيريال بنجاح ✅");
+        }
+
+        function copyText(text, msg) {
+            if(!text || text === 'لم يتم الربط') return;
+            navigator.clipboard.writeText(text);
+            showToast(msg + " ✅");
         }
 
         async function generateLicense() {
