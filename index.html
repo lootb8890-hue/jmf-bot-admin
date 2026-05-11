@@ -107,14 +107,6 @@
         .icon-btn.del { color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
         .icon-btn:active { background: rgba(255,255,255,0.15); }
 
-        .admin-badge {
-            background: #ef4444; color: #fff; font-size: 10px; font-weight: 800;
-            min-width: 18px; height: 18px; border-radius: 9px;
-            display: flex; align-items: center; justify-content: center;
-            padding: 0 5px; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-        }
-        .tab-badge { margin-right: 8px; }
-
         #toast {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
             background: var(--success); color: #000; padding: 14px 30px; border-radius: 40px;
@@ -208,8 +200,6 @@
 
     <div id="toast">تم النسخ بنجاح ✅</div>
 
-    <!-- Notification Sound -->
-    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
 
     <div id="login-overlay">
         <div class="login-box">
@@ -229,9 +219,6 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('home', this)">الرئيسية</button>
             <button class="tab-btn" onclick="switchTab('clients', this)">العملاء</button>
-            <button class="tab-btn" onclick="switchTab('chats', this); loadChatList();" style="display:flex; align-items:center; justify-content:center; gap:5px;">
-                المراسلات 💬 <span id="total-unread" class="admin-badge" style="display:none;">0</span>
-            </button>
         </div>
 
         <div class="main-content">
@@ -293,43 +280,6 @@
                 </div>
             </div>
 
-            <!-- TAB 3: CHATS (Messaging) -->
-            <div id="tab-chats" class="tab-content">
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; height: calc(100vh - 180px);">
-                    <!-- Chat List (Clients) -->
-                    <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;">
-                        <div style="padding: 12px; border-bottom: 1px solid var(--border); background: rgba(0,212,255,0.05);">
-                            <h3 style="margin:0; font-size:14px; color:var(--primary);">المحادثات</h3>
-                        </div>
-                        <div id="chat-list" style="overflow-y: auto; flex: 1;">
-                            <div style="padding: 20px; text-align: center; color: var(--text-muted);">جاري تحميل المحادثات...</div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Window -->
-                    <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;">
-                        <div id="chat-header" style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: rgba(0,212,255,0.05);">
-                            <div style="width: 10px; height: 10px; border-radius: 50%; background: #475569;" id="active-chat-status"></div>
-                            <h3 style="margin:0; font-size:14px; color:#fff;" id="active-chat-name">اختر عميل لبدء الدردشة</h3>
-                        </div>
-                        <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                            <div style="text-align: center; color: var(--text-muted); margin-top: 50px;">
-                                <i data-lucide="message-square" style="width: 50px; height: 50px; opacity: 0.2; margin-bottom: 10px;"></i>
-                                <p>يرجى اختيار عميل من القائمة الجانبية</p>
-                            </div>
-                        </div>
-                        <div style="padding: 12px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2); display: flex; gap: 10px; align-items: center;">
-                            <input type="file" id="chat-file" style="display:none;" accept="image/*" onchange="sendImage()">
-                            <button class="icon-btn" onclick="document.getElementById('chat-file').click()" title="إرسال صورة" style="padding: 8px;">
-                                <i data-lucide="image" style="width: 20px; height: 20px;"></i>
-                            </button>
-                            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #000; color: #fff; outline: none;" onkeypress="if(event.key==='Enter') sendMessage()">
-                            <button onclick="sendMessage()" style="background: var(--primary); color: #000; border: none; padding: 0 20px; border-radius: 10px; height: 42px; font-weight: 800; cursor: pointer;">إرسال</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -365,15 +315,9 @@
     <script>
         const FB_URL = "https://jmf-bot-default-rtdb.firebaseio.com/licenses";
         const DEV_URL = "https://jmf-bot-default-rtdb.firebaseio.com/devices";
-        const CHATS_URL = "https://jmf-bot-default-rtdb.firebaseio.com/chats";
         const ADMIN_PASS = "778899";
         let allData = {};
         let devicesData = {};
-        let activeChatHWID = null;
-        let chatInterval = null;
-        let lastMessageId = null;
-        let readCounts = JSON.parse(localStorage.getItem('jmf_read_counts') || "{}");
-        let unreadMap = {};
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => { navigator.serviceWorker.register('sw-admin.js'); });
@@ -384,7 +328,6 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
             btn.classList.add('active');
-            if(id !== 'chats') clearInterval(chatInterval);
             lucide.createIcons();
         }
 
@@ -417,37 +360,8 @@
                 const devRes = await fetch(`${DEV_URL}.json`);
                 devicesData = await devRes.json() || {};
                 
-                // Fetch unread status for all chats
-                await updateUnreadStates();
-                
                 filterList();
-                if(document.getElementById('tab-chats').classList.contains('active')) renderChatList();
             } catch (e) {}
-        }
-
-        async function updateUnreadStates() {
-            let total = 0;
-            const chatRes = await fetch(`${CHATS_URL}.json?shallow=true`); // Just get keys first
-            const chatKeys = await chatRes.json() || {};
-            
-            for(let hwid in chatKeys) {
-                try {
-                    const res = await fetch(`${CHATS_URL}/${hwid}/messages.json`);
-                    const msgs = await res.json();
-                    const count = msgs ? (Array.isArray(msgs) ? msgs.filter(m=>m).length : Object.keys(msgs).length) : 0;
-                    
-                    const lastRead = readCounts[hwid] || 0;
-                    if (count > lastRead) {
-                        unreadMap[hwid] = count - lastRead;
-                        if(hwid !== activeChatHWID) total += unreadMap[hwid];
-                    } else {
-                        unreadMap[hwid] = 0;
-                    }
-                } catch(e){}
-            }
-            const badge = document.getElementById('total-unread');
-            if(total > 0) { badge.innerText = total; badge.style.display = 'flex'; }
-            else { badge.style.display = 'none'; }
         }
 
         function filterList() {
@@ -515,207 +429,6 @@
             lucide.createIcons();
         }
 
-        // --- Chat Logic ---
-        function loadChatList() {
-            renderChatList();
-        }
-
-        function renderChatList() {
-            const list = document.getElementById('chat-list');
-            list.innerHTML = "";
-            const now = Date.now();
-            
-            // Collect all unique clients with device IDs
-            const clients = [];
-            Object.keys(allData).forEach(key => {
-                const item = allData[key];
-                if(item.device_id) {
-                    const isOnline = item.last_seen && (now - item.last_seen < 120000);
-                    clients.push({
-                        name: item.client || "مجهول",
-                        hwid: item.device_id,
-                        online: isOnline,
-                        serial: key
-                    });
-                }
-            });
-
-            if(clients.length === 0) {
-                list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">لا يوجد عملاء مرتبطين حالياً</div>';
-                return;
-            }
-
-            clients.forEach(c => {
-                const unread = unreadMap[c.hwid] || 0;
-                const div = document.createElement('div');
-                div.style = `padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; ${activeChatHWID === c.hwid ? 'background: rgba(0,212,255,0.1); border-right: 3px solid var(--primary);' : ''}`;
-                div.innerHTML = `
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${c.online ? 'var(--success)' : '#475569'};"></div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #fff; font-size: 13px;">${c.name}</div>
-                        <div style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${c.hwid.substring(0, 15)}...</div>
-                    </div>
-                    ${unread > 0 ? `<div class="admin-badge">${unread}</div>` : ''}
-                `;
-                div.onclick = () => selectChat(c);
-                list.appendChild(div);
-            });
-        }
-
-        async function selectChat(client) {
-            activeChatHWID = client.hwid;
-            document.getElementById('active-chat-name').innerText = client.name;
-            document.getElementById('active-chat-status').style.background = client.online ? 'var(--success)' : '#475569';
-            
-            // Mark as read
-            const res = await fetch(`${CHATS_URL}/${activeChatHWID}/messages.json`);
-            const msgs = await res.json();
-            const count = msgs ? (Array.isArray(msgs) ? msgs.filter(m=>m).length : Object.keys(msgs).length) : 0;
-            readCounts[activeChatHWID] = count;
-            unreadMap[activeChatHWID] = 0;
-            localStorage.setItem('jmf_read_counts', JSON.stringify(readCounts));
-            
-            updateUnreadStates();
-            renderChatList();
-            loadMessages();
-            if(chatInterval) clearInterval(chatInterval);
-            chatInterval = setInterval(loadMessages, 3000);
-            lucide.createIcons();
-        }
-
-        async function loadMessages() {
-            if(!activeChatHWID) return;
-            try {
-                const res = await fetch(`${CHATS_URL}/${activeChatHWID}/messages.json`);
-                const messages = await res.json() || [];
-                const msgBox = document.getElementById('chat-messages');
-                
-                const oldScrollTop = msgBox.scrollTop;
-                const oldScrollHeight = msgBox.scrollHeight;
-                
-                msgBox.innerHTML = Object.keys(messages).map(k => {
-                    const m = messages[k];
-                    const isAdmin = m.sender === 'admin';
-                    const isImg = m.type === 'image';
-                    const content = isImg ? `<a href="${m.text}" target="_blank"><img src="${m.text}" style="max-width: 100%; border-radius: 10px; margin-top:5px; display:block;"></a>` : m.text;
-                    
-                    return `
-                        <div style="align-self: ${isAdmin ? 'flex-end' : 'flex-start'}; max-width: 80%; background: ${isAdmin ? 'var(--secondary)' : 'rgba(255,255,255,0.05)'}; padding: 10px 15px; border-radius: 15px; border: 1px solid ${isAdmin ? 'transparent' : 'var(--border)'}; position: relative;">
-                            <div style="color: #fff; font-size: 13px;">${content}</div>
-                            <div style="font-size: 9px; color: rgba(255,255,255,0.5); text-align: right; margin-top: 4px;">${new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</div>
-                        </div>
-                    `;
-                }).join('');
-
-                // Sound notification for new messages
-                const currentLastMsg = Object.keys(messages).pop();
-                if(currentLastMsg && currentLastMsg !== lastMessageId) {
-                    const lastMsg = messages[currentLastMsg];
-                    if(lastMsg.sender === 'user' && lastMessageId !== null) {
-                        document.getElementById('notif-sound').play().catch(()=>{});
-                    }
-                    lastMessageId = currentLastMsg;
-                }
-
-                if (msgBox.scrollHeight > oldScrollHeight) {
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                }
-            } catch (e) {}
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if(!text || !activeChatHWID) return;
-
-            const msg = {
-                sender: 'admin',
-                text: text,
-                timestamp: Date.now()
-            };
-
-            input.value = "";
-            
-            // 1. Send to Firebase for Speed
-            try {
-                await fetch(`${CHATS_URL}/${activeChatHWID}/messages.json`, {
-                    method: 'POST',
-                    body: JSON.stringify(msg)
-                });
-                loadMessages();
-                
-                // 2. Save to GitHub for Permanence
-                saveChatToGitHub(activeChatHWID);
-            } catch (e) {
-                alert("خطأ في الإرسال");
-            }
-        }
-
-        async function saveChatToGitHub(hwid) {
-            const token = localStorage.getItem('gh_token');
-            const repo = localStorage.getItem('gh_repo') || "lootb8890-hue/JMF-BOT-Updates";
-            if(!token) return;
-
-            try {
-                // Fetch all messages from Firebase
-                const res = await fetch(`${CHATS_URL}/${hwid}/messages.json`);
-                const messages = await res.json() || {};
-                
-                const filePath = `chats/${hwid}.json`;
-                const url = `https://api.github.com/repos/${repo}/contents/${filePath}`;
-                const headers = { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" };
-
-                const getFile = await fetch(url, { headers });
-                let sha = null;
-                if(getFile.ok) sha = (await getFile.json()).sha;
-
-                await fetch(url, {
-                    method: 'PUT',
-                    headers: headers,
-                    body: JSON.stringify({
-                        message: `Sync chat history for ${hwid}`,
-                        content: btoa(unescape(encodeURIComponent(JSON.stringify(messages, null, 2)))),
-                        sha: sha
-                    })
-                });
-            } catch (e) { console.error("GitHub Sync Error:", e); }
-        }
-
-        async function sendImage() {
-            const fileInput = document.getElementById('chat-file');
-            const file = fileInput.files[0];
-            if(!file || !activeChatHWID) return;
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1];
-                const token = localStorage.getItem('gh_token');
-                const repo = localStorage.getItem('gh_repo') || "lootb8890-hue/JMF-BOT-Updates";
-                
-                if(!token) { alert("يجب ضبط GITHUB_TOKEN أولاً"); return; }
-
-                const fileName = `admin_img_${Date.now()}_${file.name}`;
-                const filePath = `chats/images/${activeChatHWID}/${fileName}`;
-                const url = `https://api.github.com/repos/${repo}/contents/${filePath}`;
-                
-                try {
-                    const ghRes = await fetch(url, {
-                        method: 'PUT',
-                        headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" },
-                        body: JSON.stringify({
-                            message: `Admin sent image to ${activeChatHWID}`,
-                            content: base64
-                        })
-                    });
-
-                    if(ghRes.ok) {
-                        const ghData = await ghRes.json();
-                        const imgUrl = ghData.content.download_url;
-                        
-                        const msg = {
-                            sender: 'admin',
-                            text: imgUrl,
-                            type: 'image',
                             timestamp: Date.now()
                         };
                         await fetch(`${CHATS_URL}/${activeChatHWID}/messages.json`, {
