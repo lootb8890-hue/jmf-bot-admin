@@ -142,8 +142,9 @@
                                 <th>الاتصال</th>
                                 <th>حالة التداول</th>
                                 <th>السيريال</th>
+                                <th>ID الجهاز</th>
                                 <th>تاريخ الانتهاء</th>
-                                <th>إجراءات</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="license-table"></tbody>
@@ -233,8 +234,11 @@
                         </div>
                     </td>
                     <td data-label="السيريال" onclick="navigator.clipboard.writeText('${key}'); showToast('تم النسخ');" style="cursor:pointer; color:var(--primary); font-family:monospace; font-size:11px;">${key}</td>
+                    <td data-label="ID الجهاز" onclick="navigator.clipboard.writeText('${item.device_id || ''}'); showToast('تم النسخ');">
+                        <span class="device-id" style="cursor:pointer; font-size:10px;">${item.device_id || 'لم يتم الربط'}</span>
+                    </td>
                     <td data-label="تاريخ الانتهاء" style="font-size:12px;">${new Date(item.expiry).toLocaleDateString('ar-EG')}</td>
-                    <td data-label="إجراءات" class="action-btns">
+                    <td class="action-btns">
                         <button class="icon-btn" onclick="viewLive('${item.device_id}')" title="مباشر"><i data-lucide="play-circle"></i></button>
                         <button class="icon-btn" onclick="showQR()" title="تطبيق المستخدم" style="color:var(--secondary);"><i data-lucide="qr-code"></i></button>
                         <button class="icon-btn del" onclick="deleteLicense('${key}')"><i data-lucide="trash-2"></i></button>
