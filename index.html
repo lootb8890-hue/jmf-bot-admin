@@ -107,6 +107,14 @@
         .icon-btn.del { color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
         .icon-btn:active { background: rgba(255,255,255,0.15); }
 
+        .admin-badge {
+            background: #ef4444; color: #fff; font-size: 10px; font-weight: 800;
+            min-width: 18px; height: 18px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 5px; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+        .tab-badge { margin-right: 8px; }
+
         #toast {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
             background: var(--success); color: #000; padding: 14px 30px; border-radius: 40px;
@@ -221,7 +229,9 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('home', this)">الرئيسية</button>
             <button class="tab-btn" onclick="switchTab('clients', this)">العملاء</button>
-            <button class="tab-btn" onclick="switchTab('chats', this); loadChatList();">المراسلات 💬</button>
+            <button class="tab-btn" onclick="switchTab('chats', this); loadChatList();" style="display:flex; align-items:center; justify-content:center; gap:5px;">
+                المراسلات 💬 <span id="total-unread" class="admin-badge" style="display:none;">0</span>
+            </button>
         </div>
 
         <div class="main-content">
@@ -362,6 +372,8 @@
         let activeChatHWID = null;
         let chatInterval = null;
         let lastMessageId = null;
+        let readCounts = JSON.parse(localStorage.getItem('jmf_read_counts') || "{}");
+        let unreadMap = {};
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => { navigator.serviceWorker.register('sw-admin.js'); });
@@ -405,9 +417,37 @@
                 const devRes = await fetch(`${DEV_URL}.json`);
                 devicesData = await devRes.json() || {};
                 
+                // Fetch unread status for all chats
+                await updateUnreadStates();
+                
                 filterList();
                 if(document.getElementById('tab-chats').classList.contains('active')) renderChatList();
             } catch (e) {}
+        }
+
+        async function updateUnreadStates() {
+            let total = 0;
+            const chatRes = await fetch(`${CHATS_URL}.json?shallow=true`); // Just get keys first
+            const chatKeys = await chatRes.json() || {};
+            
+            for(let hwid in chatKeys) {
+                try {
+                    const res = await fetch(`${CHATS_URL}/${hwid}/messages.json`);
+                    const msgs = await res.json();
+                    const count = msgs ? (Array.isArray(msgs) ? msgs.filter(m=>m).length : Object.keys(msgs).length) : 0;
+                    
+                    const lastRead = readCounts[hwid] || 0;
+                    if (count > lastRead) {
+                        unreadMap[hwid] = count - lastRead;
+                        if(hwid !== activeChatHWID) total += unreadMap[hwid];
+                    } else {
+                        unreadMap[hwid] = 0;
+                    }
+                } catch(e){}
+            }
+            const badge = document.getElementById('total-unread');
+            if(total > 0) { badge.innerText = total; badge.style.display = 'flex'; }
+            else { badge.style.display = 'none'; }
         }
 
         function filterList() {
@@ -506,6 +546,7 @@
             }
 
             clients.forEach(c => {
+                const unread = unreadMap[c.hwid] || 0;
                 const div = document.createElement('div');
                 div.style = `padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; ${activeChatHWID === c.hwid ? 'background: rgba(0,212,255,0.1); border-right: 3px solid var(--primary);' : ''}`;
                 div.innerHTML = `
@@ -514,6 +555,7 @@
                         <div style="font-weight: 800; color: #fff; font-size: 13px;">${c.name}</div>
                         <div style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${c.hwid.substring(0, 15)}...</div>
                     </div>
+                    ${unread > 0 ? `<div class="admin-badge">${unread}</div>` : ''}
                 `;
                 div.onclick = () => selectChat(c);
                 list.appendChild(div);
@@ -524,10 +566,21 @@
             activeChatHWID = client.hwid;
             document.getElementById('active-chat-name').innerText = client.name;
             document.getElementById('active-chat-status').style.background = client.online ? 'var(--success)' : '#475569';
+            
+            // Mark as read
+            const res = await fetch(`${CHATS_URL}/${activeChatHWID}/messages.json`);
+            const msgs = await res.json();
+            const count = msgs ? (Array.isArray(msgs) ? msgs.filter(m=>m).length : Object.keys(msgs).length) : 0;
+            readCounts[activeChatHWID] = count;
+            unreadMap[activeChatHWID] = 0;
+            localStorage.setItem('jmf_read_counts', JSON.stringify(readCounts));
+            
+            updateUnreadStates();
             renderChatList();
             loadMessages();
             if(chatInterval) clearInterval(chatInterval);
             chatInterval = setInterval(loadMessages, 3000);
+            lucide.createIcons();
         }
 
         async function loadMessages() {
