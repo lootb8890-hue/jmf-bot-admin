@@ -133,8 +133,22 @@
                 </div>
             </div>
             <div id="tab-clients" class="tab-content">
-                <div class="search-box"><i data-lucide="search"></i><input type="text" id="search-input" placeholder="ابحث..."></div>
-                <div class="table-box"><table><thead><tr><th>العميل</th><th>الاتصال</th><th>السيريال</th><th>تاريخ الانتهاء</th><th>إجراءات</th></tr></thead><tbody id="license-table"></tbody></table></div>
+                <div class="search-box"><i data-lucide="search"></i><input type="text" id="search-input" placeholder="ابحث بالاسم أو السيريال..."></div>
+                <div class="table-box">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>العميل</th>
+                                <th>الاتصال</th>
+                                <th>حالة التداول</th>
+                                <th>السيريال</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="license-table"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -212,10 +226,17 @@
                 tr.innerHTML = `
                     <td data-label="العميل"><b>${item.client || '-'}</b></td>
                     <td data-label="الاتصال"><div class="status-dot ${isOn ? 'online' : 'offline'}"></div> ${isOn ? 'متصل' : 'أوفلاين'}</td>
-                    <td data-label="السيريال" onclick="navigator.clipboard.writeText('${key}'); showToast('تم النسخ');" style="cursor:pointer; color:var(--primary); font-family:monospace;">${key}</td>
-                    <td data-label="تاريخ الانتهاء">${new Date(item.expiry).toLocaleDateString('ar-EG')}</td>
+                    <td data-label="حالة التداول">
+                        <div class="trading-status ${item.is_trading && isOn ? 't-active' : 't-idle'}">
+                            <i data-lucide="${item.is_trading && isOn ? 'activity' : 'pause-circle'}" style="width:14px; height:14px; color:${item.is_trading && isOn ? 'var(--success)' : 'var(--text-muted)'};"></i>
+                            ${item.is_trading && isOn ? 'نشط' : 'متوقف'}
+                        </div>
+                    </td>
+                    <td data-label="السيريال" onclick="navigator.clipboard.writeText('${key}'); showToast('تم النسخ');" style="cursor:pointer; color:var(--primary); font-family:monospace; font-size:11px;">${key}</td>
+                    <td data-label="تاريخ الانتهاء" style="font-size:12px;">${new Date(item.expiry).toLocaleDateString('ar-EG')}</td>
                     <td data-label="إجراءات" class="action-btns">
-                        <button class="icon-btn" onclick="viewLive('${item.device_id}')"><i data-lucide="play-circle"></i> مباشر</button>
+                        <button class="icon-btn" onclick="viewLive('${item.device_id}')" title="مباشر"><i data-lucide="play-circle"></i></button>
+                        <button class="icon-btn" onclick="showQR()" title="تطبيق المستخدم" style="color:var(--secondary);"><i data-lucide="qr-code"></i></button>
                         <button class="icon-btn del" onclick="deleteLicense('${key}')"><i data-lucide="trash-2"></i></button>
                     </td>
                 `;
@@ -264,11 +285,25 @@
             };
             update(); liveInterval = setInterval(update, 3000);
         }
+        function showQR() {
+            const url = "https://jmf-bot-app.vercel.app";
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
         function closeDetails() { clearInterval(liveInterval); document.getElementById('details-modal').style.display = 'none'; }
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display='none', 2000); }
         function generateRandomKey() { const p = () => Math.random().toString(36).substring(2, 6).toUpperCase(); return `JMF-${p()}-${p()}-${p()}`; }
         document.getElementById('new-key').value = generateRandomKey();
         lucide.createIcons();
     </script>
+    <!-- QR Modal -->
+    <div id="qr-modal" onclick="this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:4000; align-items:center; justify-content:center;">
+        <div style="background:var(--panel); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--border);" onclick="event.stopPropagation()">
+            <h3 style="color:var(--primary); margin-bottom:15px;">رابط تطبيق المستخدم</h3>
+            <img id="qr-img" src="" style="width:200px; height:200px; border-radius:10px; border:5px solid #fff; margin-bottom:15px;">
+            <p style="font-size:11px; color:var(--text-muted);">امسح الكود لفتح التطبيق على الهاتف</p>
+            <button class="btn" style="padding:10px; font-size:13px;" onclick="document.getElementById('qr-modal').style.display='none'">إغلاق</button>
+        </div>
+    </div>
 </body>
 </html>
