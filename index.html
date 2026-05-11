@@ -240,7 +240,7 @@
                     <td data-label="تاريخ الانتهاء" style="font-size:12px;">${new Date(item.expiry).toLocaleDateString('ar-EG')}</td>
                     <td class="action-btns">
                         <button class="icon-btn" onclick="viewLive('${item.device_id}')" title="مباشر"><i data-lucide="play-circle"></i></button>
-                        <button class="icon-btn" onclick="showQR()" title="تطبيق المستخدم" style="color:var(--secondary);"><i data-lucide="qr-code"></i></button>
+                        <button class="icon-btn" onclick="showQR('${item.device_id || key}')" title="تطبيق المستخدم" style="color:var(--secondary);"><i data-lucide="qr-code"></i></button>
                         <button class="icon-btn del" onclick="deleteLicense('${key}')"><i data-lucide="trash-2"></i></button>
                     </td>
                 `;
@@ -289,8 +289,8 @@
             };
             update(); liveInterval = setInterval(update, 3000);
         }
-        function showQR() {
-            const url = "https://jmf-bot-app.vercel.app";
+        function showQR(id) {
+            const url = `https://jmf-bot-app.vercel.app?id=${id}`;
             document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
             document.getElementById('qr-modal').style.display = 'flex';
         }
