@@ -116,6 +116,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('home', this)">الرئيسية</button>
             <button class="tab-btn" onclick="switchTab('clients', this)">العملاء</button>
+            <button class="tab-btn" onclick="switchTab('brain', this)" style="color:var(--warning)">🧠 الخبرات الذكية</button>
         </div>
         <div class="main-content">
             <div id="tab-home" class="tab-content active">
@@ -149,6 +150,21 @@
                         </thead>
                         <tbody id="license-table"></tbody>
                     </table>
+                </div>
+            </div>
+            <!-- TAB: Collective Intelligence -->
+            <div id="tab-brain" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="color:var(--primary); font-size:18px; margin:0;">سجل الخبرات المرفوعة (Cloud Brain)</h2>
+                    <div style="font-size:11px; color:var(--text-muted);">تحديث تلقائي: <span id="brain-last-update">--</span></div>
+                </div>
+                <div class="stats-grid" style="margin-bottom:15px;">
+                    <div class="stat-card"><h3>إجمالي الأنماط</h3><div id="stat-total-patterns" class="val">0</div></div>
+                    <div class="stat-card"><h3>فخاخ الافتتاح</h3><div id="stat-total-traps" class="val" style="color:var(--danger)">0</div></div>
+                    <div class="stat-card"><h3>الارتدادات الصفرية</h3><div id="stat-total-zeros" class="val" style="color:var(--warning)">0</div></div>
+                </div>
+                <div id="brain-dna-list" style="display:flex; flex-direction:column; gap:10px;">
+                    <div style="text-align:center; padding:40px; color:var(--text-muted);">جاري تجميع الخبرات من السحابة...</div>
                 </div>
             </div>
         </div>
@@ -185,6 +201,88 @@
             document.getElementById('tab-' + id).classList.add('active');
             btn.classList.add('active');
             lucide.createIcons();
+            if(id === 'brain') { fetchGlobalBrain(); startBrainInterval(); }
+            else { stopBrainInterval(); }
+        }
+
+        let brainInt = null;
+        function startBrainInterval() { if(!brainInt) brainInt = setInterval(fetchGlobalBrain, 10000); }
+        function stopBrainInterval() { if(brainInt) { clearInterval(brainInt); brainInt = null; } }
+
+        async function fetchGlobalBrain() {
+            try {
+                // Fetch all user experience files from GitHub Brain Path
+                const repo = "lootb8890-hue/JMF-BOT-Updates";
+                const path = "intelligence/brain";
+                
+                // Securely handle token via localStorage instead of hardcoding (Avoids GitHub Secret Scanning)
+                let token = localStorage.getItem('jmf_admin_token');
+                if(!token) {
+                    token = prompt("يرجى إدخال GitHub Token للوصول للخبرات المشفرة:");
+                    if(token) localStorage.setItem('jmf_admin_token', token);
+                    else return;
+                }
+
+                const headers = {"Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json"};
+                
+                const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, { headers });
+                if(!res.ok) return;
+                const files = await res.json();
+                
+                let combinedDNA = {};
+                let totalPatterns = 0;
+                let totalTraps = 0;
+                let totalZeros = 0;
+
+                for(let file of files) {
+                    if(!file.download_url) continue;
+                    const fRes = await fetch(file.download_url);
+                    const data = await fRes.json();
+                    
+                    // Merge DNA
+                    if(data.dna) {
+                        Object.entries(data.dna).forEach(([sym, d]) => {
+                            if(!combinedDNA[sym]) combinedDNA[sym] = { traps: 0, zeros: 0, trades: 0 };
+                            combinedDNA[sym].traps += (d.opening_trap_count || 0);
+                            combinedDNA[sym].zeros += (d.zero_profit_count || 0);
+                            combinedDNA[sym].trades += (d.total_trades || 0);
+                            totalTraps += (d.opening_trap_count || 0);
+                            totalZeros += (d.zero_profit_count || 0);
+                        });
+                    }
+                    if(data.patterns) totalPatterns += Object.keys(data.patterns).length;
+                }
+
+                document.getElementById('stat-total-patterns').innerText = totalPatterns;
+                document.getElementById('stat-total-traps').innerText = totalTraps;
+                document.getElementById('stat-total-zeros').innerText = totalZeros;
+                document.getElementById('brain-last-update').innerText = new Date().toLocaleTimeString();
+
+                const list = document.getElementById('brain-dna-list');
+                list.innerHTML = Object.entries(combinedDNA).map(([sym, d]) => `
+                    <div class="action-box" style="margin-bottom:10px; border-right:4px solid var(--primary); padding:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <b style="color:var(--primary); font-size:16px;">${sym}</b>
+                            <span style="font-size:10px; color:var(--text-muted);">إجمالي التعلم من ${files.length} أجهزة</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; text-align:center;">
+                            <div style="background:rgba(255,255,255,0.02); padding:8px; border-radius:10px;">
+                                <label style="font-size:9px;">فخاخ الافتتاح</label>
+                                <val style="color:var(--danger); font-weight:800;">${d.traps}</val>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.02); padding:8px; border-radius:10px;">
+                                <label style="font-size:9px;">ارتدادات صفرية</label>
+                                <val style="color:var(--warning); font-weight:800;">${d.zeros}</val>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.02); padding:8px; border-radius:10px;">
+                                <label style="font-size:9px;">إجمالي الصفقات</label>
+                                <val style="color:var(--primary); font-weight:800;">${d.trades}</val>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch(e) { console.error("Brain fetch error:", e); }
         }
 
         function checkPass() {
